@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     "Sri Lanka",
     "stream overlays",
   ],
+  icons: {
+    icon: { url: "/icon.svg", type: "image/svg+xml" },
+    apple: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

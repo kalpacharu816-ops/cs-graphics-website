@@ -48,7 +48,7 @@ export function PaymentLogo({
             alt=""
             width={100}
             height={28}
-            className="h-7 w-auto object-contain"
+            className="h-7 w-[100px] object-contain"
           />
         </span>
       );

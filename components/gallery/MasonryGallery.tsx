@@ -64,9 +64,9 @@ export function MasonryGallery({ images }: MasonryGalleryProps) {
   }, [active, images.length]);
 
   const aspectClass = (aspect: GalleryImage["aspect"]) => {
-    if (aspect === "tall") return "row-span-2 min-h-[280px] md:min-h-[360px]";
-    if (aspect === "wide") return "col-span-2 min-h-[200px]";
-    return "min-h-[220px]";
+    if (aspect === "tall") return "aspect-[3/4]";
+    if (aspect === "wide") return "aspect-video";
+    return "aspect-square";
   };
 
   return (

@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { mkdir, writeFile, readdir, stat } from "fs/promises";
 import path from "path";
-
-const SESSION_COOKIE = "cs-admin-token";
+import { SESSION_COOKIE } from "@/lib/auth-constants";
 const HERO_DIR = path.join(process.cwd(), "public", "content", "hero");
 
 export async function GET() {

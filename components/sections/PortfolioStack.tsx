@@ -144,7 +144,7 @@ export function PortfolioStack() {
           {items.map((item) => (
             <article
               key={`mobile-${item.id}`}
-              className="portfolio-card-surface relative overflow-hidden rounded-3xl min-h-[320px]"
+              className="portfolio-card-surface relative overflow-hidden rounded-3xl aspect-[4/5] min-h-[320px]"
             >
               <CardContent item={item} />
             </article>

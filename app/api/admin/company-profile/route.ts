@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-
-const SESSION_COOKIE = "cs-admin-token";
+import { SESSION_COOKIE } from "@/lib/auth-constants";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { HiEye, HiEyeOff } from "react-icons/hi";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [show, setShow] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,7 +23,8 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ password }),
       });
       if (!res.ok) {
-        setError("Invalid password");
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Invalid password");
         return;
       }
       router.push("/studio/control/dashboard");
@@ -52,19 +55,37 @@ export default function AdminLoginPage() {
             Authorized access only. Not linked on the public site.
           </p>
         </div>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Admin password"
-          className="form-input w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-cs-silver"
-          autoComplete="current-password"
-        />
+        <div className="relative">
+          <input
+            type={show ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Admin password"
+            className="form-input w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 pr-12 text-cs-silver"
+            autoComplete="current-password"
+          />
+          <button
+            type="button"
+            onClick={() => setShow(!show)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-cs-silver/50 hover:text-cs-silver transition-colors p-1"
+            tabIndex={-1}
+          >
+            <motion.span
+              key={show ? "off" : "on"}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.15 }}
+              className="flex"
+            >
+              {show ? <HiEyeOff className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+            </motion.span>
+          </button>
+        </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="btn-premium w-full rounded-full bg-cs-violet py-3.5 text-sm font-medium text-white hover:glow-violet disabled:opacity-50"
+          className="btn-premium w-full rounded-full bg-cs-violet py-3.5 text-sm font-medium text-white hover:glow-violet disabled:opacity-50 transition-all"
         >
           {loading ? "Signing in…" : "Enter Dashboard"}
         </button>
