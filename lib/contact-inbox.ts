@@ -15,6 +15,27 @@ function write(messages: ContactMessage[]): void {
   localStorage.setItem(CMS_KEYS.inbox, JSON.stringify(messages));
 }
 
+async function writeApi(messages: ContactMessage[]): Promise<void> {
+  try {
+    await fetch("/api/admin/cms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "inbox", data: messages }),
+    });
+  } catch {
+  }
+}
+
+export async function syncInboxFromApi(): Promise<void> {
+  try {
+    const res = await fetch("/api/admin/cms?type=inbox");
+    if (!res.ok) return;
+    const result: { type: string; data: ContactMessage[] } = await res.json();
+    if (result.data) write(result.data);
+  } catch {
+  }
+}
+
 export function loadInbox(): ContactMessage[] {
   return read().sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -28,15 +49,21 @@ export function saveContactMessage(msg: Omit<ContactMessage, "id" | "createdAt" 
     createdAt: new Date().toISOString(),
     read: false,
   };
-  write([entry, ...read()]);
+  const all = [entry, ...read()];
+  write(all);
+  writeApi(all);
 }
 
 export function markInboxRead(id: string): void {
-  write(read().map((m) => (m.id === id ? { ...m, read: true } : m)));
+  const all = read().map((m) => (m.id === id ? { ...m, read: true } : m));
+  write(all);
+  writeApi(all);
 }
 
 export function deleteInboxMessage(id: string): void {
-  write(read().filter((m) => m.id !== id));
+  const all = read().filter((m) => m.id !== id);
+  write(all);
+  writeApi(all);
 }
 
 export function unreadInboxCount(): number {

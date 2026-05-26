@@ -31,7 +31,7 @@ const DEFAULT_PORTFOLIO: PortfolioItem[] = PORTFOLIO.map((p, i) => ({
   gradient: p.gradient,
 }));
 
-function read<T>(key: string): T | null {
+function readLocal<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(key);
@@ -42,9 +42,70 @@ function read<T>(key: string): T | null {
   }
 }
 
-function write<T>(key: string, value: T): void {
+function writeLocal<T>(key: string, value: T): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+const CMS_TYPE_MAP: Record<string, string> = {
+  [CMS_KEYS.hero]: "hero",
+  [CMS_KEYS.offers]: "offers",
+  [CMS_KEYS.popup]: "popup",
+  [CMS_KEYS.collaborators]: "collaborators",
+  [CMS_KEYS.payments]: "payments",
+  [CMS_KEYS.gallery]: "gallery",
+  [CMS_KEYS.socials]: "socials",
+  [CMS_KEYS.portfolio]: "portfolio",
+  [CMS_KEYS.services]: "services",
+};
+
+async function writeToApi(type: string, data: unknown): Promise<void> {
+  try {
+    await fetch("/api/admin/cms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, data }),
+    });
+  } catch {
+  }
+}
+
+const ENV_CMS_MAP: Record<string, string> = {};
+for (const [ls, api] of Object.entries(CMS_TYPE_MAP)) {
+  ENV_CMS_MAP[ls] = api;
+}
+
+export async function syncAllFromApi(): Promise<void> {
+  try {
+    const res = await fetch("/api/admin/cms");
+    if (!res.ok) return;
+    const data: Record<string, unknown> = await res.json();
+    const revMap: Record<string, string> = {};
+    for (const [ls, api] of Object.entries(CMS_TYPE_MAP)) {
+      revMap[api] = ls;
+    }
+    for (const [apiKey, value] of Object.entries(data)) {
+      const lsKey = revMap[apiKey];
+      if (lsKey && value !== null) {
+        writeLocal(lsKey, value);
+      }
+    }
+  } catch {
+  }
+}
+
+export async function syncCmsType(localKey: string): Promise<void> {
+  const type = CMS_TYPE_MAP[localKey];
+  if (!type) return;
+  try {
+    const res = await fetch(`/api/admin/cms?type=${type}`);
+    if (!res.ok) return;
+    const result: { type: string; data: unknown } = await res.json();
+    if (result.data !== null) {
+      writeLocal(localKey, result.data);
+    }
+  } catch {
+  }
 }
 
 export type PopupCms = {
@@ -64,23 +125,25 @@ export type PopupCms = {
 export type OffersCms = string[];
 
 export function getHeroConfig(): HeroConfig {
-  return read<HeroConfig>(CMS_KEYS.hero) ?? { ...HERO_CONFIG, titleWords: [...HERO_CONFIG.titleWords] };
+  return readLocal<HeroConfig>(CMS_KEYS.hero) ?? { ...HERO_CONFIG, titleWords: [...HERO_CONFIG.titleWords] };
 }
 
 export function setHeroConfig(config: HeroConfig): void {
-  write(CMS_KEYS.hero, config);
+  writeLocal(CMS_KEYS.hero, config);
+  writeToApi("hero", config);
 }
 
 export function getOfferMessages(): string[] {
-  return read<OffersCms>(CMS_KEYS.offers) ?? [...OFFER_MESSAGES];
+  return readLocal<OffersCms>(CMS_KEYS.offers) ?? [...OFFER_MESSAGES];
 }
 
 export function setOfferMessages(messages: string[]): void {
-  write(CMS_KEYS.offers, messages);
+  writeLocal(CMS_KEYS.offers, messages);
+  writeToApi("offers", messages);
 }
 
 export function getPopupConfig(): PopupCms {
-  const stored = read<PopupCms>(CMS_KEYS.popup);
+  const stored = readLocal<PopupCms>(CMS_KEYS.popup);
   const base: PopupCms = {
     ...seasonalPopupConfig,
     cta: { ...seasonalPopupConfig.cta },
@@ -89,68 +152,75 @@ export function getPopupConfig(): PopupCms {
 }
 
 export function setPopupConfig(config: PopupCms): void {
-  write(CMS_KEYS.popup, config);
+  writeLocal(CMS_KEYS.popup, config);
+  writeToApi("popup", config);
 }
 
 export function getCollaborators(): Collaborator[] {
-  return read<Collaborator[]>(CMS_KEYS.collaborators) ?? COLLABORATORS;
+  return readLocal<Collaborator[]>(CMS_KEYS.collaborators) ?? COLLABORATORS;
 }
 
 export function setCollaborators(list: Collaborator[]): void {
-  write(CMS_KEYS.collaborators, list);
+  writeLocal(CMS_KEYS.collaborators, list);
+  writeToApi("collaborators", list);
 }
 
 export function getPaymentConfig(): Record<PaymentSlug, PaymentMethodConfig> {
-  const stored = read<Partial<Record<PaymentSlug, PaymentMethodConfig>>>(CMS_KEYS.payments);
+  const stored = readLocal<Partial<Record<PaymentSlug, PaymentMethodConfig>>>(CMS_KEYS.payments);
   if (!stored) return PAYMENT_METHODS_CONFIG;
   return { ...PAYMENT_METHODS_CONFIG, ...stored };
 }
 
 export function setPaymentConfig(slug: PaymentSlug, config: PaymentMethodConfig): void {
   const current = getPaymentConfig();
-  write(CMS_KEYS.payments, { ...current, [slug]: config });
+  writeLocal(CMS_KEYS.payments, { ...current, [slug]: config });
+  writeToApi("payments", { ...current, [slug]: config });
 }
 
 export function getGalleryOverride(slug: string): GalleryImage[] | null {
-  const all = read<Record<string, GalleryImage[]>>(CMS_KEYS.gallery);
+  const all = readLocal<Record<string, GalleryImage[]>>(CMS_KEYS.gallery);
   return all?.[slug] ?? null;
 }
 
 export function setGalleryOverride(slug: string, images: GalleryImage[]): void {
-  const all = read<Record<string, GalleryImage[]>>(CMS_KEYS.gallery) ?? {};
-  write(CMS_KEYS.gallery, { ...all, [slug]: images });
+  const all = readLocal<Record<string, GalleryImage[]>>(CMS_KEYS.gallery) ?? {};
+  writeLocal(CMS_KEYS.gallery, { ...all, [slug]: images });
+  writeToApi("gallery", { ...all, [slug]: images });
 }
 
 export function getAllGalleryOverrides(): Record<string, GalleryImage[]> {
-  return read<Record<string, GalleryImage[]>>(CMS_KEYS.gallery) ?? {};
+  return readLocal<Record<string, GalleryImage[]>>(CMS_KEYS.gallery) ?? {};
 }
 
 // ─── Social links ───
 export function getSocialLinks(): SocialLink[] {
-  return read<SocialLink[]>(CMS_KEYS.socials) ?? DEFAULT_SOCIALS;
+  return readLocal<SocialLink[]>(CMS_KEYS.socials) ?? DEFAULT_SOCIALS;
 }
 
 export function setSocialLinks(links: SocialLink[]): void {
-  write(CMS_KEYS.socials, links);
+  writeLocal(CMS_KEYS.socials, links);
+  writeToApi("socials", links);
 }
 
 // ─── Portfolio ───
 export function getPortfolio(): PortfolioItem[] {
-  return read<PortfolioItem[]>(CMS_KEYS.portfolio) ?? DEFAULT_PORTFOLIO;
+  return readLocal<PortfolioItem[]>(CMS_KEYS.portfolio) ?? DEFAULT_PORTFOLIO;
 }
 
 export function setPortfolio(items: PortfolioItem[]): void {
-  write(CMS_KEYS.portfolio, items);
+  writeLocal(CMS_KEYS.portfolio, items);
+  writeToApi("portfolio", items);
 }
 
 // ─── Service detail overrides ───
 export function getServiceOverrides(): Partial<Record<ServiceSlug, ServiceDetailCms>> {
-  return read<Partial<Record<ServiceSlug, ServiceDetailCms>>>(CMS_KEYS.services) ?? {};
+  return readLocal<Partial<Record<ServiceSlug, ServiceDetailCms>>>(CMS_KEYS.services) ?? {};
 }
 
 export function setServiceOverride(slug: ServiceSlug, data: ServiceDetailCms): void {
   const all = getServiceOverrides();
-  write(CMS_KEYS.services, { ...all, [slug]: data });
+  writeLocal(CMS_KEYS.services, { ...all, [slug]: data });
+  writeToApi("services", { ...all, [slug]: data });
 }
 
 export function getMergedService(slug: string): ServiceDetail | undefined {

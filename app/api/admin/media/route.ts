@@ -3,8 +3,16 @@ import { cookies } from "next/headers";
 import { readdir, stat, writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
+import {
+  isStorageConfigured,
+  listFiles,
+  uploadFile,
+  publicUrl,
+} from "@/lib/supabase/storage";
 
-async function listDir(
+const ALLOWED_IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"];
+
+async function listLocal(
   subdir: string,
   extensions: string[]
 ): Promise<{ name: string; path: string; size: number }[]> {
@@ -14,17 +22,11 @@ async function listDir(
     const entries = await readdir(dir);
     const files = await Promise.all(
       entries
-        .filter((name) =>
-          extensions.some((ext) => name.toLowerCase().endsWith(ext))
-        )
+        .filter((name) => extensions.some((ext) => name.toLowerCase().endsWith(ext)))
         .map(async (name) => {
           const full = path.join(dir, name);
           const s = await stat(full);
-          return {
-            name,
-            path: `/content/${subdir}/${name}`,
-            size: s.size,
-          };
+          return { name, path: `/content/${subdir}/${name}`, size: s.size };
         })
     );
     return files.sort((a, b) => a.name.localeCompare(b.name));
@@ -41,33 +43,49 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const folder = searchParams.get("folder");
+  const useSupabase = isStorageConfigured();
 
   if (folder === "hero") {
-    const files = await listDir("hero", [".mp4", ".webm", ".mov"]);
+    const files = useSupabase
+      ? await listFiles("hero")
+      : await listLocal("hero", [".mp4", ".webm", ".mov"]);
     return NextResponse.json({ root: "public/content/hero/", files });
   }
 
   if (folder === "profiles") {
-    const files = await listDir("profiles", [".pdf"]);
+    const files = useSupabase
+      ? await listFiles("profiles")
+      : await listLocal("profiles", [".pdf"]);
     return NextResponse.json({ root: "public/content/profiles/", files });
   }
 
   if (folder === "portfolio") {
-    const files = await listDir("portfolio", [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]);
+    const files = useSupabase
+      ? await listFiles("portfolio")
+      : await listLocal("portfolio", ALLOWED_IMAGE_EXTS);
     return NextResponse.json({ root: "public/content/portfolio/", files });
   }
 
   if (folder === "gallery") {
-    const files = await listDir("gallery", [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]);
+    const files = useSupabase
+      ? await listFiles("gallery")
+      : await listLocal("gallery", ALLOWED_IMAGE_EXTS);
     return NextResponse.json({ root: "public/content/gallery/", files });
   }
 
-  const [hero, profiles, portfolio, gallery] = await Promise.all([
-    listDir("hero", [".mp4", ".webm", ".mov"]),
-    listDir("profiles", [".pdf"]),
-    listDir("portfolio", [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]),
-    listDir("gallery", [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]),
-  ]);
+  const [hero, profiles, portfolio, gallery] = useSupabase
+    ? await Promise.all([
+        listFiles("hero"),
+        listFiles("profiles"),
+        listFiles("portfolio"),
+        listFiles("gallery"),
+      ])
+    : await Promise.all([
+        listLocal("hero", [".mp4", ".webm", ".mov"]),
+        listLocal("profiles", [".pdf"]),
+        listLocal("portfolio", ALLOWED_IMAGE_EXTS),
+        listLocal("gallery", ALLOWED_IMAGE_EXTS),
+      ]);
 
   return NextResponse.json({ hero, profiles, portfolio, gallery });
 }
@@ -93,11 +111,27 @@ export async function POST(request: Request) {
 
     const rawName = (form.get("filename") as string) || "image.png";
     const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const allowedExts = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"];
     const ext = path.extname(safeName).toLowerCase();
-    const finalName = allowedExts.includes(ext) ? safeName : `${safeName}.png`;
+    const finalName = ALLOWED_IMAGE_EXTS.includes(ext) ? safeName : `${safeName}.png`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    const supabaseOk = isStorageConfigured();
+
+    if (supabaseOk) {
+      const contentType = ext === ".svg" ? "image/svg+xml" : `image/${ext.replace(".", "")}`;
+      const result = await uploadFile(folder, finalName, buffer, contentType);
+      if (result) {
+        return NextResponse.json({
+          ok: true,
+          path: result.path,
+          name: result.name,
+          size: result.size,
+        });
+      }
+      return NextResponse.json({ error: "Supabase upload failed" }, { status: 500 });
+    }
+
     const dir = path.join(process.cwd(), "public", "content", folder);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, finalName), buffer);

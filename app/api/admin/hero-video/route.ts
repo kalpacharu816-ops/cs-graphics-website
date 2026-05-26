@@ -3,12 +3,25 @@ import { cookies } from "next/headers";
 import { mkdir, writeFile, readdir, stat } from "fs/promises";
 import path from "path";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
+import {
+  isStorageConfigured,
+  listFiles,
+  uploadFile,
+  mimeFromExt,
+} from "@/lib/supabase/storage";
+
 const HERO_DIR = path.join(process.cwd(), "public", "content", "hero");
+const ALLOWED_VIDEO_EXTS = [".mp4", ".webm", ".mov"];
 
 export async function GET() {
   const cookieStore = await cookies();
   if (!cookieStore.get(SESSION_COOKIE)?.value) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (isStorageConfigured()) {
+    const files = await listFiles("hero");
+    return NextResponse.json({ root: "supabase-storage/hero/", files });
   }
 
   try {
@@ -50,12 +63,25 @@ export async function POST(request: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await mkdir(HERO_DIR, { recursive: true });
   const rawName = (formData.get("filename") as string) || "hero-bg.mp4";
   const filename = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
   const finalName = /\.(mp4|webm|mov)$/i.test(filename)
     ? filename
     : `${filename}.mp4`;
+
+  if (isStorageConfigured()) {
+    const result = await uploadFile("hero", finalName, buffer, mimeFromExt(finalName));
+    if (result) {
+      return NextResponse.json({
+        ok: true,
+        url: result.path,
+        path: result.path,
+      });
+    }
+    return NextResponse.json({ error: "Supabase upload failed" }, { status: 500 });
+  }
+
+  await mkdir(HERO_DIR, { recursive: true });
   await writeFile(path.join(HERO_DIR, finalName), buffer);
 
   const url = `/content/hero/${finalName}?v=${Date.now()}`;

@@ -22,6 +22,7 @@ import {
   setGalleryOverride,
   getPaymentConfig,
   setPaymentConfig,
+  syncAllFromApi,
   type PopupCms,
 } from "@/lib/cms/store";
 import {
@@ -31,6 +32,7 @@ import {
   deleteReview,
   updateReview,
   toggleFeaturedReview,
+  syncReviewsFromApi,
   type ClientReview,
 } from "@/lib/reviews";
 import { loadInbox, markInboxRead, deleteInboxMessage } from "@/lib/contact-inbox";
@@ -144,6 +146,8 @@ export function AdminDashboard() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(() => {
+    syncAllFromApi();
+    syncReviewsFromApi();
     setReviews(loadStoredReviews());
     setInbox(loadInbox());
     setHero(getHeroConfig());

@@ -23,12 +23,34 @@ function write(settings: SiteSettingsCms): void {
   localStorage.setItem(CMS_KEYS.siteSettings, JSON.stringify(settings));
 }
 
+async function writeApi(settings: SiteSettingsCms): Promise<void> {
+  try {
+    await fetch("/api/admin/cms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "siteSettings", data: settings }),
+    });
+  } catch {
+  }
+}
+
+export async function syncSiteSettingsFromApi(): Promise<void> {
+  try {
+    const res = await fetch("/api/admin/cms?type=siteSettings");
+    if (!res.ok) return;
+    const result: { type: string; data: SiteSettingsCms } = await res.json();
+    if (result.data) write(result.data);
+  } catch {
+  }
+}
+
 export function getSiteSettings(): SiteSettingsCms {
   return read();
 }
 
 export function setSiteSettings(settings: SiteSettingsCms): void {
   write(settings);
+  writeApi(settings);
 }
 
 export function getCompanyProfileUrl(): string {
@@ -36,5 +58,7 @@ export function getCompanyProfileUrl(): string {
 }
 
 export function setCompanyProfilePdf(path: string): void {
-  write({ ...read(), companyProfilePdf: path });
+  const settings = { ...read(), companyProfilePdf: path };
+  write(settings);
+  writeApi(settings);
 }
