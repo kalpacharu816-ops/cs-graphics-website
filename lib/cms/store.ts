@@ -229,12 +229,16 @@ export function getMergedService(slug: string): ServiceDetail | undefined {
   if (!base) return undefined;
   const override = getServiceOverrides()[slug as ServiceSlug];
   const galleryRaw = getGalleryOverride(slug);
-  const gallery = galleryRaw
-    ? galleryRaw.map((g) => ({
-        ...g,
-        gradient: g.gradient ?? "from-cs-violet/40 via-purple-950/80 to-black",
-      }))
-    : base.gallery;
+  let gallery: GalleryImage[];
+  if (galleryRaw) {
+    gallery = galleryRaw.map((g, i) => ({
+      ...g,
+      src: g.src || base.gallery[i]?.src,
+      gradient: g.gradient ?? "from-cs-violet/40 via-purple-950/80 to-black",
+    }));
+  } else {
+    gallery = base.gallery;
+  }
   if (!override) return { ...base, gallery };
   return {
     ...base,
