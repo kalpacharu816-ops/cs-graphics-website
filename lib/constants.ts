@@ -69,29 +69,34 @@ export const SERVICES: {
 
 export const PORTFOLIO = [
   {
-    title: "Neon Drift Thumbnail",
-    category: "YouTube",
+    title: "Lal Indian Restaurant",
+    category: "Social Media Campaign",
     gradient: "from-violet-600/40 via-purple-900/60 to-black",
+    image: "/portfolio/PortFolio.png",
   },
   {
-    title: "Midnight Stream Pack",
-    category: "Streaming",
+    title: "Recent Stream Cover Arts",
+    category: "Streaming Cover Arts",
     gradient: "from-indigo-500/30 via-cs-purple/80 to-black",
+    image: "/portfolio/PortFolio2.png",
   },
   {
-    title: "Pulse Album Art",
-    category: "Music",
+    title: "Music YouTube Thumbnails",
+    category: "YouTube Thumbnails",
     gradient: "from-fuchsia-600/30 via-violet-900/70 to-black",
+    image: "/portfolio/PortFolio3.png",
   },
   {
-    title: "Velocity Ad Campaign",
-    category: "Social Ads",
+    title: "Recent Social Ads for Marketing Campaign",
+    category: "Social Media Campaign",
     gradient: "from-cs-violet/40 via-purple-950/80 to-black",
+    image: "/portfolio/PortFolio4.png",
   },
   {
-    title: "Apex Event Poster",
-    category: "Print",
+    title: "Recent YouTube Thumbnails",
+    category: "YouTube Thumbnails",
     gradient: "from-blue-600/20 via-cs-purple/90 to-black",
+    image: "/portfolio/PortFolio5.png",
   },
 ] as const;
 

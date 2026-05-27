@@ -29,6 +29,7 @@ const DEFAULT_PORTFOLIO: PortfolioItem[] = PORTFOLIO.map((p, i) => ({
   title: p.title,
   category: p.category,
   gradient: p.gradient,
+  image: "image" in p ? (p as { image: string }).image : undefined,
 }));
 
 function readLocal<T>(key: string): T | null {
