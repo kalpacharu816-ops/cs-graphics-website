@@ -102,28 +102,62 @@ export function ServicePageContent({ service }: { service: ServiceDetail }) {
       </section>
 
       <section className="section-padding py-20 md:py-28">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="mb-14 max-w-2xl"
-        >
-          <p className="text-xs uppercase tracking-[0.35em] text-cs-violet font-medium mb-3">
-            Portfolio
-          </p>
-          <h2
-            className="text-3xl md:text-4xl font-semibold text-cs-silver"
-            style={{ fontFamily: "var(--font-display)" }}
+        {service.gallery.some((img) => img.src) ? (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7 }}
+              className="mb-14 max-w-2xl"
+            >
+              <p className="text-xs uppercase tracking-[0.35em] text-cs-violet font-medium mb-3">
+                Portfolio
+              </p>
+              <h2
+                className="text-3xl md:text-4xl font-semibold text-cs-silver"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Selected {service.shortTitle} work
+              </h2>
+              <p className="mt-4 text-cs-silver/55 leading-relaxed">
+                {service.description} Tap any piece for fullscreen preview.
+              </p>
+            </motion.div>
+            <MasonryGallery images={service.gallery} />
+          </>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 32, filter: "blur(12px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto max-w-lg text-center"
           >
-            Selected {service.shortTitle} work
-          </h2>
-          <p className="mt-4 text-cs-silver/55 leading-relaxed">
-            {service.description} Tap any piece for fullscreen preview.
-          </p>
-        </motion.div>
-
-        <MasonryGallery images={service.gallery} />
+            <div className="glass rounded-3xl p-12 md:p-16 border border-white/[0.06]">
+              <motion.div
+                className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-cs-violet/15"
+                animate={{ boxShadow: ["0 0 0 0 rgba(110,0,255,0)", "0 0 0 16px rgba(110,0,255,0)", "0 0 0 0 rgba(110,0,255,0)"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <span className="text-2xl text-cs-violet">✦</span>
+              </motion.div>
+              <p className="text-xs uppercase tracking-[0.35em] text-cs-violet font-medium mb-3">
+                Portfolio
+              </p>
+              <h2
+                className="text-2xl md:text-3xl font-semibold text-cs-silver mb-4"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Coming Soon
+              </h2>
+              <p className="text-sm text-cs-silver/50 leading-relaxed max-w-sm mx-auto">
+                We&apos;re curating a selection of {service.shortTitle.toLowerCase()} work to showcase here.
+                In the meantime, feel free to reach out for samples or a custom preview.
+              </p>
+            </div>
+          </motion.div>
+        )}
       </section>
 
       <section className="section-padding pb-28 md:pb-36">
