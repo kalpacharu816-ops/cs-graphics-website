@@ -5,7 +5,7 @@ export type SiteSettingsCms = {
 };
 
 const DEFAULT: SiteSettingsCms = {
-  companyProfilePdf: "/content/company-profile.pdf",
+  companyProfilePdf: "/content/profiles/Cs Graphics Lk – Company Profile.pdf",
 };
 
 function read(): SiteSettingsCms {
